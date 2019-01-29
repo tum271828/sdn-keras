@@ -1,5 +1,4 @@
 from classification_models import Classifiers
-
 import keras.backend as K
 from keras.models import Model
 from keras.layers import *
@@ -33,7 +32,7 @@ class SDN(object):
         x=self.upBlock(x,3,2,compress=False)
         x=self.upBlock(x,3,2,compress=False)
         x=Conv2D(nClass, (3,3), kernel_initializer='he_normal', padding='same')(x)
-        x = Activation('softmax')(x)
+        x = Activation('softmax',name="output")(x)
         self.softmaxLayers.append(x)
         self.trainModel=Model(input,self.softmaxLayers)
         self.trainModel.summary()
@@ -113,15 +112,17 @@ class SDN(object):
         x = Activation(self.activation)(x)
         x = Conv2D(nFilter, (3,3), kernel_initializer='he_normal', padding='same')(x)        
         output=x
+    
         x = Conv2D(self.nClass, (3,3), kernel_initializer='he_normal', padding='same')(x)        
         if blockId==0:
             e = Lambda(lambda x: tf.image.resize_bilinear(x, (224,224), align_corners=True))(x)
+            e = Activation('softmax',name="softmax_{}_{}".format(blockId,blockTypeId))(e)        
         else:
             e = Lambda(lambda x: tf.image.resize_bilinear(x, (224,224), align_corners=True))(x)
+            e = Activation('softmax')(e)                    
             eOld=self.E[(blockId-1)*3+blockTypeId]
-            e=Multiply()([e,eOld])
+            e=Add(name="softmax_{}_{}".format(blockId,blockTypeId))([e,eOld])
         self.E[blockId*3+blockTypeId]=e
-        x = Activation('softmax',name="softmax_{}_{}".format(blockId,blockTypeId))(e)        
-        self.softmaxLayers.append(x)
+        self.softmaxLayers.append(e)
         return output
 
