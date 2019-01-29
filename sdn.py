@@ -112,17 +112,17 @@ class SDN(object):
         x = Activation(self.activation)(x)
         x = Conv2D(nFilter, (3,3), kernel_initializer='he_normal', padding='same')(x)        
         output=x
-    
-        x = Conv2D(self.nClass, (3,3), kernel_initializer='he_normal', padding='same')(x)        
-        if blockId==0:
-            e = Lambda(lambda x: tf.image.resize_bilinear(x, (224,224), align_corners=True))(x)
-            e = Activation('softmax',name="softmax_{}_{}".format(blockId,blockTypeId))(e)        
-        else:
-            e = Lambda(lambda x: tf.image.resize_bilinear(x, (224,224), align_corners=True))(x)
-            e = Activation('softmax')(e)                    
-            eOld=self.E[(blockId-1)*3+blockTypeId]
-            e=Add(name="softmax_{}_{}".format(blockId,blockTypeId))([e,eOld])
-        self.E[blockId*3+blockTypeId]=e
-        self.softmaxLayers.append(e)
+        if up or blockTypeId==0:
+            x = Conv2D(self.nClass, (3,3), kernel_initializer='he_normal', padding='same')(x)        
+            if blockId<2:
+                e = Lambda(lambda x: tf.image.resize_bilinear(x, (224,224), align_corners=True))(x)
+                e = Activation('softmax',name="softmax_{}_{}".format(blockId,blockTypeId))(e)        
+            else:
+                e = Lambda(lambda x: tf.image.resize_bilinear(x, (224,224), align_corners=True))(x)
+                e = Activation('softmax')(e)                    
+                eOld=self.E[(blockId-2)*3+blockTypeId]
+                e=Add(name="softmax_{}_{}".format(blockId,blockTypeId))([e,eOld])
+            self.E[blockId*3+blockTypeId]=e
+            self.softmaxLayers.append(e)
         return output
 
