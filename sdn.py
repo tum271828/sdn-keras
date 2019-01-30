@@ -6,7 +6,7 @@ import tensorflow as tf
 
 class SDN(object):
 
-    def __init__(self,nClass,featureNames=["conv2_block5_0_relu","conv3_block9_0_relu","conv4_block26_0_relu"],dropoutRate=0.0,weights="imagenet"):        
+    def __init__(self,nClass,featureNames=["conv2_block5_0_relu","conv3_block9_0_relu","conv4_block26_0_relu"],dropoutRate=0.0,weights="imagenet",useScoreMapConnect=False):        
         self.dropoutRate=dropoutRate
         self.nUpConvo=2
         self.nDownConvo=2
@@ -14,6 +14,7 @@ class SDN(object):
         self.nClass=nClass
         self.softmaxLayers=[]
         self.E=[None]*4*3
+        self.useScoreMapConnect=useScoreMapConnect
         classifier, preprocess_input = Classifiers.get('densenet169')
         basemodel = classifier((224, 224, 3), weights=weights)
         #basemodel = classifier((224, 224, 3))
@@ -33,7 +34,7 @@ class SDN(object):
         x=self.upBlock(x,3,2,compress=False)
         x=Conv2D(nClass, (3,3), kernel_initializer='he_normal', padding='same')(x)
         x = Activation('softmax',name="output")(x)
-        self.softmaxLayers.append(x)
+        self.softmaxLayers.append(x)        
         self.trainModel=Model(input,self.softmaxLayers)
         self.trainModel.summary()
         self.model=Model(input,x)
@@ -114,7 +115,7 @@ class SDN(object):
         output=x
         if up or blockTypeId==0:
             x = Conv2D(self.nClass, (3,3), kernel_initializer='he_normal', padding='same')(x)        
-            if blockId<2:
+            if self.useScoreMapConnect==False or blockId<2:
                 e = Lambda(lambda x: tf.image.resize_bilinear(x, (224,224), align_corners=True))(x)
                 e = Activation('softmax',name="softmax_{}_{}".format(blockId,blockTypeId))(e)        
             else:
