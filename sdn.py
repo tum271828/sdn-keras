@@ -113,9 +113,10 @@ class SDN(object):
                 nFilter=768
         x = Activation(self.activation)(x)
         x = Conv2D(nFilter, (3,3), kernel_initializer='he_normal', padding='same')(x)        
-        output=x
+        output=x        
         if up or blockTypeId==0:
-            e = Conv2D(self.nClass, (3,3), kernel_initializer='he_normal', padding='same')(x)        
+            x = Conv2D(self.nClass, (3,3), kernel_initializer='he_normal', padding='same')(x)        
+            e = Activation(self.activation)(x)
             if self.useScoreMapConnect==False or levelId<2:
                 #e = Activation('softmax',name="softmax_{}_{}".format(levelId,blockTypeId))(e)        
                 pass
