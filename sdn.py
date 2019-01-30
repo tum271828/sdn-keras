@@ -16,6 +16,7 @@ class SDN(object):
         self.E=[None]*4*3
         self.useScoreMapConnect=useScoreMapConnect
         classifier, preprocess_input = Classifiers.get('densenet169')
+        self.preprocess=lambda x:preprocess_input(x*255)
         basemodel = classifier((224, 224, 3), weights=weights)
         #basemodel = classifier((224, 224, 3))
         outputs=list(map(lambda x:basemodel.get_layer(x).output,featureNames))
@@ -99,7 +100,7 @@ class SDN(object):
 
         return x
 
-    def compression(self, x,blockId,blockTypeId,up):        
+    def compression(self, x,levelId,blockTypeId,up):        
         if up:
             if blockTypeId==0:
                 nFilter=768
@@ -115,15 +116,15 @@ class SDN(object):
         output=x
         if up or blockTypeId==0:
             x = Conv2D(self.nClass, (3,3), kernel_initializer='he_normal', padding='same')(x)        
-            if self.useScoreMapConnect==False or blockId<2:
+            if self.useScoreMapConnect==False or levelId<2:
                 e = Lambda(lambda x: tf.image.resize_bilinear(x, (224,224), align_corners=True))(x)
-                e = Activation('softmax',name="softmax_{}_{}".format(blockId,blockTypeId))(e)        
+                e = Activation('softmax',name="softmax_{}_{}".format(levelId,blockTypeId))(e)        
             else:
                 e = Lambda(lambda x: tf.image.resize_bilinear(x, (224,224), align_corners=True))(x)
                 e = Activation('softmax')(e)                    
-                eOld=self.E[(blockId-2)*3+blockTypeId]
-                e=Add(name="softmax_{}_{}".format(blockId,blockTypeId))([e,eOld])
-            self.E[blockId*3+blockTypeId]=e
+                eOld=self.E[(levelId-2)*3+blockTypeId]
+                e=Add(name="softmax_{}_{}".format(levelId,blockTypeId))([e,eOld])
+            self.E[levelId*3+blockTypeId]=e
             self.softmaxLayers.append(e)
         return output
 

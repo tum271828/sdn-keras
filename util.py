@@ -16,7 +16,7 @@ def loadImage(path, width, height):
     img = cv2.resize(img, (width, height))
     return img
 
-def flowFromPath(imagePath,maskPath,batchSize,nOutput):
+def flowFromPath(imagePath,maskPath,batchSize,nOutput,preprocess,shuffle=True):
     print(os.path.join(imagePath,"*.png"))
     imgFiles=glob.glob(os.path.join(imagePath,"*.png"))
     maskFiles=glob.glob(os.path.join(maskPath,"*.png"))
@@ -29,8 +29,9 @@ def flowFromPath(imagePath,maskPath,batchSize,nOutput):
     n=len(filenames)
     while True:
         perm=np.arange(n)
-        random.shuffle(perm)  
+        if shuffle:
+            random.shuffle(perm)  
         for i in range(n):
             p=perm[i]
-            yield np.array(images[p]).reshape(1,224,224,3),[np.array(masks[p]).reshape(1,224,224,3)]*nOutput
+            yield np.array(preprocess(images[p])).reshape(1,224,224,3),[np.array(masks[p]).reshape(1,224,224,3)]*nOutput
 
