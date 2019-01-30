@@ -115,16 +115,16 @@ class SDN(object):
         x = Conv2D(nFilter, (3,3), kernel_initializer='he_normal', padding='same')(x)        
         output=x
         if up or blockTypeId==0:
-            x = Conv2D(self.nClass, (3,3), kernel_initializer='he_normal', padding='same')(x)        
+            e = Conv2D(self.nClass, (3,3), kernel_initializer='he_normal', padding='same')(x)        
             if self.useScoreMapConnect==False or levelId<2:
-                e = Lambda(lambda x: tf.image.resize_bilinear(x, (224,224), align_corners=True))(x)
-                e = Activation('softmax',name="softmax_{}_{}".format(levelId,blockTypeId))(e)        
-            else:
-                e = Lambda(lambda x: tf.image.resize_bilinear(x, (224,224), align_corners=True))(x)
-                e = Activation('softmax')(e)                    
+                #e = Activation('softmax',name="softmax_{}_{}".format(levelId,blockTypeId))(e)        
+                pass
+            else:                
                 eOld=self.E[(levelId-2)*3+blockTypeId]
-                e=Add(name="softmax_{}_{}".format(levelId,blockTypeId))([e,eOld])
+                e=Add()([e,eOld])
             self.E[levelId*3+blockTypeId]=e
-            self.softmaxLayers.append(e)
+            b = Lambda(lambda x: tf.image.resize_bilinear(x, (224,224), align_corners=True))(e)            
+            s = Activation('softmax',name="softmax_{}_{}".format(levelId,blockTypeId))(b)                    
+            self.softmaxLayers.append(s)
         return output
 
