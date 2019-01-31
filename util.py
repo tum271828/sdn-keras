@@ -17,21 +17,25 @@ def loadImage(path, width, height):
     return img
 
 def flowFromPath(imagePath,maskPath,batchSize,nOutput,preprocess,shuffle=True):
-    print(os.path.join(imagePath,"*.png"))
     imgFiles=glob.glob(os.path.join(imagePath,"*.png"))
     maskFiles=glob.glob(os.path.join(maskPath,"*.png"))
     filenames=set([os.path.basename(f) for f in imgFiles]).intersection(
         [os.path.basename(m) for m in maskFiles])
-    
-    #[os.path.join(maskPath,os.path.basename(f)) for f in imgFiles]
     masks=[loadMask(os.path.join(maskPath,f),3,224,224) for  f in filenames]
     images=[loadImage(os.path.join(imagePath,f),224,224) for  f in filenames]
     n=len(filenames)
+    perm=np.arange(n)    
+    X=[]
+    Y=[]
     while True:
-        perm=np.arange(n)
         if shuffle:
-            random.shuffle(perm)  
+            random.shuffle(perm)
         for i in range(n):
             p=perm[i]
-            yield np.array(preprocess(images[p])).reshape(1,224,224,3),[np.array(masks[p]).reshape(1,224,224,3)]*nOutput
+            X.append(preprocess(images[p]))
+            Y.append(masks[p])
+            if len(X)==batchSize:
+                yield np.array(X),[np.array(Y)]*nOutput
+                X=[]
+                Y=[]
 
