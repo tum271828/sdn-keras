@@ -1,8 +1,26 @@
-from classification_models import Classifiers
+from classification_models.keras import Classifiers
 import keras.backend as K
 from keras.models import Model
 from keras.layers import *
 import tensorflow as tf
+from functools import lru_cache 
+import numpy as np 
+import cv2 
+
+@lru_cache
+def buildPalette(numClass):
+    np.random.seed(42)
+    return np.random.randint(
+        0, 255, size=(numClass, 3))
+
+def colorlize(mask,numClass=80):
+    if numClass is None:
+        numClass=np.max(mask)+1
+    palette=buildPalette(numClass)
+    img = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
+    for label, color in enumerate(palette):
+        img[mask == label, :] = color
+    return img
 
 class SDN(object):
 
@@ -125,8 +143,20 @@ class SDN(object):
                 eOld=self.E[(levelId-2)*3+blockTypeId]
                 e=Add()([e,eOld])
             self.E[levelId*3+blockTypeId]=e
-            b = Lambda(lambda x: tf.image.resize_bilinear(x, (self.height,self.width), align_corners=True))(e)            
+            b = Lambda(lambda x: tf.compat.v1.image.resize_bilinear(x, (self.height,self.width), align_corners=True))(e)            
             s = Activation('softmax',name="softmax_{}_{}".format(levelId,blockTypeId))(b)                    
             self.softmaxLayers.append(s)
         return output
-
+        
+    def predict(self,img):
+        img=cv2.resize(img,(224,224))
+        pred=self.model.predict(np.array([img]),verbose=0)
+        pred=np.argmax(pred,axis=3)
+        return pred[0] 
+        
+    def showResult(self,img,mask): 
+        h,w,*_=img.shape
+        seg=cv2.resize(colorlize(mask),(w,h)) 
+        
+        
+        return seg*0.5+img*0.5

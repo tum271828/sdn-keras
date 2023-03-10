@@ -1,17 +1,17 @@
 import sdn
 import util
 from keras.callbacks import *
-from gpu_stat import *
+
 import time
 
-
-trainImagePath="/your_path/train_img"
-trainMaskPath="/your_path/train_mask"
-testImagePath="/your_path/test_img"
-testMaskPath="/your_path/test_mask"
+basepath="/home/tum/ds/topviewcarsegbox.part"
+trainImagePath=f"{basepath}/leftImg8bit/train"
+trainMaskPath=f"{basepath}/gtFine/train"
+testImagePath=f"{basepath}/leftImg8bit/val"
+testMaskPath=f"{basepath}/gtFine/train"
 batchSize=4
-nImg=398
-useHierarchicalSupervision=False
+nImg=577
+useHierarchicalSupervision=True
 useScoreMapConnect=True
 
 if useHierarchicalSupervision:
@@ -29,11 +29,12 @@ if useHierarchicalSupervision:
         'softmax_0_0': 1,'softmax_0_1': 1,
         'softmax_1_0': 1,
         'softmax_2_0': 1,'softmax_2_1': 1}
+    sdn.trainModel.load_weights("weight.hsv_smap2.hdf5")
     sdn.trainModel.compile(loss=loss,loss_weights=lossWeight,optimizer="adam",
         metrics=['accuracy'])
     sdn.trainModel.fit_generator(g, nImg//batchSize, 50, callbacks=[logger,lr,stop],
         validation_data=g2, validation_steps=nImg//batchSize)
-    sdn.trainModel.save_weights("weight.hsv_smap.hdf5", overwrite=True)
+    sdn.trainModel.save_weights("weight.hsv_smap3.hdf5", overwrite=True)
 
 else:
     sdn=sdn.SDN(3)
